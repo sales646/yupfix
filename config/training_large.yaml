@@ -1,0 +1,108 @@
+# Training Configuration for Yup250 Mamba Trading System - LARGE MODEL (H100 Optimized)
+#
+# Model: ~70-80M parameters
+# Target GPU: NVIDIA H100 80GB
+# Training Time: ~2-4 hours for full convergence
+
+data:
+  train_path: "data/features/1min"
+  val_path: "data/features/1min"
+  symbols:
+    - "EURUSD"
+    - "GBPUSD"
+    - "USDJPY"
+    - "AUDUSD"
+    - "USDCAD"
+    # Note: XAUUSD excluded - only has 2 years of data vs 10 years for others
+  sequence_length: 1440  # 24 hours @ 1 min (H100 can handle this)
+  bar_seconds: 60
+
+model:
+  d_input: 100           # 24 features * 4 TFs + 4 HMM
+  d_model: 512           # 256 -> 512 (2x)
+  n_layers: 24           # 12 -> 24 (2x)
+  d_state: 256           # 128 -> 256 (2x)
+  n_assets: 5            # 5 FX pairs with complete 10-year data
+  n_cross_layers: 6      # 3 -> 6 (2x)
+  dropout: 0.15          # Increased for regularization
+  use_multi_label: true
+
+ensemble:
+  enabled: false         # Enable after single model training
+  n_models: 5
+  agreement_threshold: 0.67
+
+training:
+  batch_size: 64         # Large batch for H100 (80GB can handle ~128)
+  epochs: 100
+  learning_rate: 0.0003  # Higher LR for larger batch
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  use_checkpoint: true   # Gradient checkpointing for memory efficiency
+  checkpoint_every: 4    # Checkpoint every 4th layer
+  accumulation_steps: 1  # No accumulation needed with H100
+
+augmentation:
+  enabled: true
+  methods:
+    - time_warp
+    - spread_noise
+    - volatility_scaling
+  probability: 0.3       # Reduced augmentation for larger model
+
+multi_label:
+  direction_weight: 1.0
+  volatility_weight: 0.5
+  magnitude_weight: 0.3
+  confidence_weight: 0.2
+  uncertainty_weight: 0.1
+
+# Risk-Aware Loss Settings (FTMO Aligned)
+risk_loss:
+  enabled: true
+  daily_loss_limit: 0.05     # 5% daily limit (FTMO)
+  max_loss_limit: 0.10       # 10% max drawdown (FTMO)
+  drawdown_penalty: 2.0      # Weight for DD penalty
+  volatility_penalty: 0.5    # Penalize volatile returns
+  consistency_bonus: 0.3     # Reward consistent gains
+
+hmm:
+  n_states: 3
+  window_seconds: 3600
+
+optimizer:
+  name: "AdamW"
+  betas: [0.9, 0.95]     # Adjusted for better stability
+  eps: 1.0e-8
+  
+scheduler:
+  name: "CosineAnnealingWarmRestarts"
+  T_0: 10                # Restart every 10 epochs
+  T_mult: 2              # Double restart period each time
+  eta_min: 0.00001
+
+loss:
+  horizon_1min: 1.0
+  horizon_5min: 0.8
+  horizon_15min: 0.6
+  horizon_1hour: 0.4
+
+logging:
+  log_dir: "logs/training_large"
+  save_dir: "models/checkpoints_large"
+  log_every: 50          # Log every 50 steps
+  save_every: 5          # Save every 5 epochs
+  tensorboard: true
+
+validation:
+  val_every: 1
+  early_stopping:
+    enabled: true
+    patience: 10         # More patience for larger model
+    min_delta: 0.0005
+
+# H100-specific optimizations
+hardware:
+  mixed_precision: "bf16"  # Use bfloat16 for H100
+  compile_model: true      # Use torch.compile for speedup
+  num_workers: 8           # More workers for faster data loading

@@ -1,0 +1,31 @@
+risk_limits:
+  daily_drawdown_percent: 4.0
+  total_drawdown_percent: 8.0
+  max_risk_per_trade_percent: 1.25
+  max_concurrent_trades: 4
+  max_correlated_exposure_percent: 4.0
+
+  correlation_groups:
+    usd_long: ["EURUSD_SHORT", "GBPUSD_SHORT", "AUDUSD_SHORT"]
+    usd_short: ["EURUSD_LONG", "GBPUSD_LONG", "AUDUSD_LONG"]
+    risk_on: ["AUDUSD_LONG", "GBPUSD_LONG"]
+    risk_off: ["USDJPY_SHORT", "USDCHF_LONG"]
+
+ftmo_limits:
+  daily_drawdown_percent: 5.0
+  total_drawdown_percent: 10.0
+  challenge_target_percent: 10.0
+
+safety_switch:
+  enabled: true
+  trigger_total_dd_percent: 6.0
+  trigger_daily_dd_percent: 3.5
+
+position_sizing:
+  method: "volatility_normalized"
+  profit_scaling:
+    enabled: true
+    levels:
+      - { profit_percent: 2.0, multiplier: 1.2 }
+      - { profit_percent: 5.0, multiplier: 1.4 }
+      - { profit_percent: 8.0, multiplier: 1.3 }

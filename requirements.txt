@@ -1,0 +1,16 @@
+numpy>=1.23.0
+pandas>=2.0.0
+pyzmq>=25.0.0
+torch>=2.0.0
+xgboost>=1.7.0
+stable-baselines3>=2.0.0
+optuna>=3.0.0
+arch>=5.0.0
+hmmlearn>=0.3.0
+vectorbt>=0.25.0
+polars>=0.17.0
+pyyaml
+requests
+streamlit>=1.28.0
+plotly>=5.18.0
+pytest>=7.0.0
